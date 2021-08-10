@@ -1,8 +1,33 @@
 ---
 aos_server:
   host: 18.224.213.67
-  port: 25409
+  port: 20759
   username: admin
-  password: "CumbersomePartridge9*"
+  password: "RigidMarmot2%"
+resources:
+  ip_pools:
+  - name: apstra-pool
+    subnets: ["4.0.0.0/24", "4.0.1.0/24"]
+    tags: ["ip-pool"]
+  ip:
+  - group: spine_loopback_ips
+    pool: spine-loopback
+  - group: leaf_loopback_ips
+    pool: leaf-loopback
+  - group: spine_leaf_link_ips
+    pool: spine-leaf
+  asn:
+  - group: spine_asns
+    pool: vpod-evpn-asn-pool
+  - group: leaf_asns
+    pool: vpod-evpn-asn-pool
+blueprints:
+- id: evpn-vqfx_offbox-virtual
+  routing_zones:
+    - label: crimson
+      vrf_name: crimson-vrf
+      vlan_id: 202
+      sz_type: evpn
+      # routing_policy:
+      dhcp_servers: [ "9.0.0.1" ]
 
-  
