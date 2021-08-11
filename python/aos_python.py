@@ -32,6 +32,9 @@ class AosServer:
     def http_get(self, path) -> urllib3.response.HTTPResponse:
         return self.http.request('GET', path, headers=self.json_token_header)
 
+    def http_delete(self, path) -> urllib3.response.HTTPResponse:
+        return self.http.request('DELETE', path, headers=self.json_token_header)
+
     def http_post(self, path, data, headers=None) -> urllib3.response.HTTPResponse:
         if not headers:
             headers = self.json_token_header
@@ -98,8 +101,18 @@ class AosServer:
         resp = self.http_put(LOOP_PATH, loop_data)
         print(f"resp of routing-zone/leaf_loopbcka_ips got 202: {resp.status}")
 
+    def context_template_add(self, bp_id, policies):
+        print(bp_id)
+        policy_data = {
+            "policies": policies
+        }
+        print(policy_data)
+        resp = self.http_put(f"/api/blueprints/{bp_id}/obj-policy-import", policy_data)
+        print(f"resp policies get 204: {resp.status}")
 
-
+    def context_template_delete(self, bp_id, ct_id) -> None:
+        resp = self.http_delete(f"/api/blueprints/{bp_id}/endpoint-policies/{ct_id}?delete_recursive=true")
+        print(f"resp policies - get 204: {resp.status}")
 
 
 
@@ -113,9 +126,13 @@ def main():
 
     aos_server = AosServer(AOS_ENV["aos_server"]["host"], AOS_ENV["aos_server"]["port"], AOS_ENV["aos_server"]["username"], AOS_ENV["aos_server"]["password"])
 
-    aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
+    # aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
 
-    aos_server.create_routing_zone(AOS_ENV["blueprints"][0]["id"], AOS_ENV["blueprints"][0]["routing_zones"][0])
+    # aos_server.create_routing_zone(AOS_ENV["blueprints"][0]["id"], AOS_ENV["blueprints"][0]["routing_zones"][0])
+
+    aos_server.context_template_add(AOS_ENV["blueprints"][0]["id"], AOS_ENV["blueprints"][0]["policies"])
+
+    # aos_server.context_template_delete(AOS_ENV["blueprints"][0]["id"], "test1234")
 
 
 if __name__ == "__main__":
