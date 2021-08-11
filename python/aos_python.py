@@ -2,7 +2,6 @@
 
 import yaml
 import requests
-from requests.utils import requote_uri
 import urllib3
 import json
 
@@ -89,18 +88,16 @@ class AosServer:
         resp = self.http_put(DS_PATH, dhcp_servers)
         print(f"resp of routing-zone/dhcp-servers should be 204: {resp.status}")
 
+        # "Private-10_0_0_0-8"
         loop_data = {
-            # "pool_ids": [ prefix.replace("/", "-") for prefix in data["leaf_loopback_ips"] ]
-            "pool_ids": data["leaf_loopback_ips"]
+            "pool_ids": [ prefix.replace("/", "-").replace(".", "_") for prefix in data["leaf_loopback_ips"] ]
         }
-        LOOP_PATH = f"/api/blueprints/{bp_id}/resource_groups/ip/" + requote_uri(f"sz:{rz_id} leaf_loopback_ips")
+        LOOP_PATH = f"/api/blueprints/{bp_id}/resource_groups/ip/" + requests.utils.quote(f"sz:{rz_id},leaf_loopback_ips")
         print(LOOP_PATH)
         print(loop_data)
         resp = self.http_put(LOOP_PATH, loop_data)
         print(f"resp of routing-zone/leaf_loopbcka_ips got 202: {resp.status}")
 
-
-        # resp = self.http.request('PUT', )
 
 
 
