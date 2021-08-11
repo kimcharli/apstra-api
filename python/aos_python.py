@@ -29,25 +29,54 @@ class AosServer:
         self._auth()
         self.json_token_header = urllib3.response.HTTPHeaderDict({"Content-Type": "application/json", "AuthToken": self.token})
 
-    def http_get(self, path) -> urllib3.response.HTTPResponse:
+    def http_get(self, path, expected=None) -> urllib3.response.HTTPResponse:
         print(f"==== GET {path}")
-        return self.http.request('GET', path, headers=self.json_token_header)
+        resp = self.http.request('GET', path, headers=self.json_token_header)
+        if expected:
+            print(f"== status (expect {expected}): {resp.status}")
+            if resp.status != expected:
+                print(f"== body: {resp.data}")
+        else:
+            print(f"== status: {resp.status}")
+        return resp
 
-    def http_delete(self, path) -> urllib3.response.HTTPResponse:
+    def http_delete(self, path, expected=None) -> urllib3.response.HTTPResponse:
         print(f"==== DELETE {path}")
-        return self.http.request('DELETE', path, headers=self.json_token_header)
+        resp = self.http.request('DELETE', path, headers=self.json_token_header)
+        if expected:
+            print(f"== status (expect {expected}): {resp.status}")
+            if resp.status != expected:
+                print(f"== body: {resp.data}")
+        else:
+            print(f"== status: {resp.status}")
+        return resp
+        
 
-    def http_post(self, path, data, headers=None) -> urllib3.response.HTTPResponse:
+    def http_post(self, path, data, headers=None, expected=None) -> urllib3.response.HTTPResponse:
         if not headers:
             headers = self.json_token_header
         print(f"==== POST {path}\n{data}")
-        return self.http.request('POST', path, body=json.dumps(data), headers=headers)
+        resp = self.http.request('POST', path, body=json.dumps(data), headers=headers)
+        if expected:
+            print(f"== status (expect {expected}): {resp.status}")
+            if resp.status != expected:
+                print(f"== body: {resp.data}")
+        else:
+            print(f"== status: {resp.status}")
+        return resp
 
-    def http_put(self, path, data, headers=None) -> urllib3.response.HTTPResponse:
+    def http_put(self, path, data, headers=None, expected=None) -> urllib3.response.HTTPResponse:
         print(f"==== PUT {path}\n{data}")
         if not headers:
             headers = self.json_token_header
-        return self.http.request('PUT', path, body=json.dumps(data), headers=headers)
+        resp = self.http.request('PUT', path, body=json.dumps(data), headers=headers)
+        if expected:
+            print(f"== status (expect {expected}): {resp.status}")
+            if resp.status != expected:
+                print(f"== body: {resp.data}")
+        else:
+            print(f"== status: {resp.status}")
+        return resp
 
 
     def _auth(self) -> None:
@@ -56,9 +85,9 @@ class AosServer:
             "username": self.username,
             "password": self.password
         }
-        resp = self.http_post( auth_url, auth_spec, headers=self.json_header)
+        resp = self.http_post( auth_url, auth_spec, headers=self.json_header, expected=201)
         self.token = json.loads(resp.data)["token"]
-        print(f"token = {self.token}")
+        print(f"== token: {self.token}")
 
 
     def create_IP_Pool(self, pools) -> None:
@@ -71,8 +100,7 @@ class AosServer:
                 "display_name": pool["name"],
                 "id": pool["name"],
             }
-            resp = self.http_post(ip_pools_url, ip_pools_spec)
-            print( f"ip-pool status should be 202: {resp.status}")
+            resp = self.http_post(ip_pools_url, ip_pools_spec, expected=202)
             
     def routing_zone_get(self, bp_id, rz_name) -> str:
         routing_zone_url = f"/api/blueprints/{bp_id}/security-zones"
@@ -82,7 +110,7 @@ class AosServer:
             if rzs[rz]["label"] == rz_name:
                 return rzs[rz]["id"]
 
-    def create_routing_zone(self, bp_id, data) -> None:
+    def routing_zone_add(self, bp_id, data) -> None:
         routing_zone_url = f"/api/blueprints/{bp_id}/security-zones"
         routing_zone_spec =  {
             "sz_type": "evpn",
@@ -90,45 +118,45 @@ class AosServer:
             "vrf_name": f"{data['label']}-vrf",
             "vlan_id": data["vlan_id"]
             }
-        resp = self.http_post(routing_zone_url, routing_zone_spec)
-        print(f"resp of routing-zone should be 201: {resp.status}")
+        resp = self.http_post(routing_zone_url, routing_zone_spec, expected=201)
         
-        rz_id = self.routing_zone_get(bp_id, data["label"])
-        dhcp_server_url = f"/api/blueprints/{bp_id}/security-zones/{rz_id}/dhcp-servers"
-        dhcp_server_spec = { "items": data["dhcp_server_spec"] }
-        resp = self.http_put(dhcp_server_url, dhcp_server_spec)
-        print(f"resp of routing-zone/dhcp-servers should be 204: {resp.status}")
+        routing_zone_id = self.routing_zone_get(bp_id, data["label"])
+        dhcp_server_url = f"/api/blueprints/{bp_id}/security-zones/{routing_zone_id}/dhcp-servers"
+        dhcp_server_spec = { "items": data["dhcp_servers"] }
+        resp = self.http_put(dhcp_server_url, dhcp_server_spec, expected=204)
 
         # "Private-10_0_0_0-8"
-        loopback_url = f"/api/blueprints/{bp_id}/resource_groups/ip/" + requests.utils.quote(f"sz:{rz_id},leaf_loopback_ips")
+        loopback_url = f"/api/blueprints/{bp_id}/resource_groups/ip/" + requests.utils.quote(f"sz:{routing_zone_id},leaf_loopback_ips")
         loopback_spec = {
             "pool_ids": [ prefix.replace("/", "-").replace(".", "_") for prefix in data["leaf_loopback_ips"] ]
         }
-        resp = self.http_put(loopback_url, loopback_spec)
-        print(f"loopback 202: {resp.status}")
+        resp = self.http_put(loopback_url, loopback_spec, expected=202)
+
+    def routing_zone_delete(self, bp_id, routing_zone_name) -> None:
+        routing_zone_id = self.routing_zone_get(bp_id, routing_zone_name)
+        routing_zone_url = f"/api/blueprints/{bp_id}/security-zones/{routing_zone_id}"
+        self.http_delete(routing_zone_url, expected=204)
+
 
     def context_template_add(self, bp_id, policies):
         policy_url = f"/api/blueprints/{bp_id}/obj-policy-import"
         policy_spec = {
             "policies": policies
         }
-        resp = self.http_put(policy_url, policy_spec)
-        print(f"policies 204: {resp.status}")
+        resp = self.http_put(policy_url, policy_spec, expected=204)
 
     def context_template_delete(self, bp_id, ct_id) -> None:
-        resp = self.http_delete(f"/api/blueprints/{bp_id}/endpoint-policies/{ct_id}?delete_recursive=true")
-        print(f"resp policies - get 204: {resp.status}")
+        resp = self.http_delete(f"/api/blueprints/{bp_id}/endpoint-policies/{ct_id}?delete_recursive=true", expected=204)
 
     def virtual_networks_find(self, bp_id, vn_name) -> str:
         vn_find_url = f"/api/blueprints/{bp_id}/virtual-networks"
-        resp = self.http_get(vn_find_url)
+        resp = self.http_get(vn_find_url, expected=200)
         if resp.status == 200:
             vns = json.loads(resp.data)["virtual_networks"]
             for vn in vns:
                 if vns[vn]["label"] == vn_name:
                     return vns[vn]["id"]
         else:
-            print(f"vn_get 200 ok: {resp.status}")
             print(resp.data)
             return "Error"
 
@@ -138,24 +166,22 @@ class AosServer:
         vn_batch_spec = {
             "virtual-networks": networks
         }
-        resp = self.http_post(vn_batch_url, vn_batch_spec)
+        resp = self.http_post(vn_batch_url, vn_batch_spec, expected=202)
         if resp.status != 202: #accepted
-            print(f"vn_batch_spec status: {resp.status}\n{resp.data}")
+            print(f"vn_batch_spec: {resp.data}")
 
-    def virtual_networks_add(self, bp_id, networks):
+    def virtual_networks_add(self, bp_id, networks, routing_zone_label ):
+        routing_zone_id = self.routing_zone_get(bp_id, routing_zone_label)
         vn_batch_url = f"/api/blueprints/{bp_id}/virtual-networks"
         for vn in networks:
-            resp = self.http_post(vn_batch_url, vn)
-            print(f"== vn_add 201 created: {resp.status}")
-            if resp.status != 201:
-                print(resp.data)
+            vn["security_zone_id"] = routing_zone_id
+            self.http_post(vn_batch_url, vn, expected=201)
 
 
     def virtual_networks_delete(self, bp_id, vn_name ) -> None:
         vn_id = self.virtual_networks_find(bp_id, vn_name)
         vn_url = f"/api/blueprints/{bp_id}/virtual-networks/{vn_id}?async=full"
-        resp = self.http_delete(vn_url)
-        print(f"vn-delete 202 accepted: {resp.status}")
+        self.http_delete(vn_url, expected=202)
 
 
 # post https://18.224.213.67:20759/api/blueprints/evpn-vqfx_offbox-virtual/virtual-networks-batch?async=full
@@ -168,22 +194,23 @@ def main():
         AOS_ENV = yaml.load(file, Loader=yaml.FullLoader)
         # print(AOS_ENV)
 
+    bp_id = AOS_ENV["blueprints"][0]["id"]
+
     aos_server = AosServer(AOS_ENV["aos_server"]["host"], AOS_ENV["aos_server"]["port"], AOS_ENV["aos_server"]["username"], AOS_ENV["aos_server"]["password"])
 
     # aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
 
-    # aos_server.create_routing_zone(AOS_ENV["blueprints"][0]["id"], AOS_ENV["blueprints"][0]["routing_zones"][0])
 
-    # aos_server.context_template_add(AOS_ENV["blueprints"][0]["id"], AOS_ENV["blueprints"][0]["policies"])
+    # aos_server.context_template_add(bp_id, AOS_ENV["blueprints"][0]["policies"])
 
-    aos_server.virtual_networks_add(AOS_ENV["blueprints"][0]["id"], AOS_ENV["blueprints"][0]["routing_zones"][0]["virtual_networks"])
-
-
-    # aos_server.context_template_delete(AOS_ENV["blueprints"][0]["id"], "test1234")
-
-    # aos_server.virtual_networks_delete(AOS_ENV["blueprints"][0]["id"], "c-801")
+    aos_server.routing_zone_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0])
+    aos_server.virtual_networks_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0]["virtual_networks"], AOS_ENV["blueprints"][0]["routing_zones"][0]["label"])
 
 
+    # aos_server.context_template_delete(bp_id, "test1234")
+
+    # aos_server.virtual_networks_delete(bp_id, "c-801")
+    # aos_server.routing_zone_delete(bp_id, "crimson")
 
 if __name__ == "__main__":
     main()

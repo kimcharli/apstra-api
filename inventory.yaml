@@ -28,7 +28,6 @@ blueprints:
     vrf_name: crimson-vrf
     vlan_id: 202
     sz_type: evpn
-    # routing_policy:
     dhcp_servers: [ "9.0.0.1" ]
     leaf_loopback_ips: [ "Private-10.0.0.0/8" ]
     to_generic_link_ips: [ "Private-192.168.0.0/16" ]
@@ -36,7 +35,7 @@ blueprints:
     - label: c-801
       description: 'vlan 801'
       vn_type: vxlan
-      security_zone_id: ccd2d9a6-1fc0-46b4-a1c4-9000faf25a59
+      # security_zone_id: ccd2d9a6-1fc0-46b4-a1c4-9000faf25a59
       bound_to:
       - system_id: 08a0bd88-6184-48da-9d8c-4261ff259b86
         vlan_id: 801
