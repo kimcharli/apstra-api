@@ -184,15 +184,10 @@ class AosServer:
         self.http_delete(vn_url, expected=202)
 
 
-# post https://18.224.213.67:20759/api/blueprints/evpn-vqfx_offbox-virtual/virtual-networks-batch?async=full
-# 202 accepted
-# test1234 = { "virtual_networks":[{"virtual_gateway_ipv4_enabled":true,"vn_id":null,"vn_type":"vxlan","svi_ips":[{"system_id":"a4295414-0810-43dd-913e-32075b581a62","ipv4_mode":"enabled","ipv4_addr":null,"ipv6_mode":"disabled","ipv6_addr":null},{"system_id":"f05f2abb-fd9f-4c09-91a7-76ce06bcb5e4","ipv4_mode":"enabled","ipv4_addr":null,"ipv6_mode":"disabled","ipv6_addr":null},{"system_id":"08a0bd88-6184-48da-9d8c-4261ff259b86","ipv4_mode":"enabled","ipv4_addr":null,"ipv6_mode":"disabled","ipv6_addr":null}],"virtual_gateway_ipv4":null,"ipv6_subnet":null,"bound_to":[{"system_id":"dc31602f-fc0a-4388-a1eb-7a1dc19eca6e","access_switch_node_ids":[],"vlan_id":801},{"system_id":"08a0bd88-6184-48da-9d8c-4261ff259b86","access_switch_node_ids":[],"vlan_id":801}],"vni_ids":[],"virtual_gateway_ipv6":null,"ipv4_subnet":"8.0.1.0/24","rt_policy":{"import_RTs":null,"export_RTs":null},"label":"c-801","ipv4_enabled":true,"virtual_gateway_ipv6_enabled":false,"ipv6_enabled":false,"security_zone_id":"ccd2d9a6-1fc0-46b4-a1c4-9000faf25a59","dhcp_service":"dhcpServiceDisabled","create_policy_tagged":true}]}
-
 
 def main():
     with open(r'inventory.yaml') as file:
         AOS_ENV = yaml.load(file, Loader=yaml.FullLoader)
-        # print(AOS_ENV)
 
     bp_id = AOS_ENV["blueprints"][0]["id"]
 
@@ -203,14 +198,14 @@ def main():
 
     # aos_server.context_template_add(bp_id, AOS_ENV["blueprints"][0]["policies"])
 
-    aos_server.routing_zone_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0])
-    aos_server.virtual_networks_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0]["virtual_networks"], AOS_ENV["blueprints"][0]["routing_zones"][0]["label"])
+    # aos_server.routing_zone_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0])
+    # aos_server.virtual_networks_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0]["virtual_networks"], AOS_ENV["blueprints"][0]["routing_zones"][0]["label"])
 
 
     # aos_server.context_template_delete(bp_id, "test1234")
 
-    # aos_server.virtual_networks_delete(bp_id, "c-801")
-    # aos_server.routing_zone_delete(bp_id, "crimson")
+    aos_server.virtual_networks_delete(bp_id, "c-801")
+    aos_server.routing_zone_delete(bp_id, "crimson")
 
 if __name__ == "__main__":
     main()
