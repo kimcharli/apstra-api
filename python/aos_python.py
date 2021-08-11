@@ -2,6 +2,7 @@
 
 import yaml
 import requests
+from requests.utils import requote_uri
 import urllib3
 import json
 
@@ -25,22 +26,32 @@ class AosServer:
         self.port = port
         self.username = username
         self.password = password
-        self.json_header = {"Content-Type": "application/json"}
+        self.json_header = urllib3.response.HTTPHeaderDict({"Content-Type": "application/json"})
         self._auth()
         self.json_token_header = urllib3.response.HTTPHeaderDict({"Content-Type": "application/json", "AuthToken": self.token})
+
+    def http_get(self, path) -> urllib3.response.HTTPResponse:
+        return self.http.request('GET', path, headers=self.json_token_header)
+
+    def http_post(self, path, data, headers=None) -> urllib3.response.HTTPResponse:
+        if not headers:
+            headers = self.json_token_header
+        return self.http.request('POST', path, body=json.dumps(data), headers=headers)
+
+    def http_put(self, path, data, headers=None) -> urllib3.response.HTTPResponse:
+        if not headers:
+            headers = self.json_token_header
+        return self.http.request('PUT', path, body=json.dumps(data), headers=headers)
 
 
     def _auth(self) -> None:
         AUTH_PATH = "/api/aaa/login"
-        AUTH_DATA = json.dumps({"username": self.username, "password": self.password})
-        AUTH_HEADERS = urllib3.response.HTTPHeaderDict(self.json_header)
-        resp = self.http.request('POST', AUTH_PATH, body=AUTH_DATA, headers=AUTH_HEADERS)
+        resp = self.http_post( AUTH_PATH, {"username": self.username, "password": self.password}, headers=self.json_header)
         self.token = json.loads(resp.data)["token"]
         print(f"token = {self.token}")
 
 
     def create_IP_Pool(self, pools) -> None:
-        #     apstra-pool: ["4.0.0.0/24", "4.0.1.0/24"]
         for pool in pools:
             print( pool )
             ip_pools = {
@@ -50,19 +61,16 @@ class AosServer:
                 "id": pool["name"],
             }
             POOL_PATH = "/api/resources/ip-pools"
-            POOL_DATA = json.dumps(ip_pools)
-            print( POOL_DATA )
-            # POOL_HEADERS = urllib3.response.HTTPHeaderDict(self.json_token_header)
-            resp = self.http.request('POST', POOL_PATH, body=POOL_DATA, headers=self.json_token_header)
+            resp = self.http_post(POOL_PATH, ip_pools)
             print( f"ip-pool status should be 202: {resp.status}")
             
     def routing_zone_get(self, bp_id, rz_name) -> str:
         RZ_PATH = f"/api/blueprints/{bp_id}/security-zones"
-        resp = self.http.request('GET', RZ_PATH, headers=self.json_token_header)
+        resp = self.http_get(RZ_PATH)
         rzs = json.loads(resp.data)["items"]
         for rz in rzs:
-            if rzs[rz].label == rz_name:
-                return rz.id
+            if rzs[rz]["label"] == rz_name:
+                return rzs[rz]["id"]
 
     def create_routing_zone(self, bp_id, data) -> None:
         RZ_DATA =  {
@@ -72,15 +80,28 @@ class AosServer:
             "vlan_id": data["vlan_id"]
             }
         RZ_PATH = f"/api/blueprints/{bp_id}/security-zones"
-        resp = self.http.request('POST', RZ_PATH, body=json.dumps(RZ_DATA), headers=self.json_token_header)
-        print(f"resp of routing-zone: {resp.status}")
+        resp = self.http_post(RZ_PATH, RZ_DATA)
+        print(f"resp of routing-zone should be 201: {resp.status}")
         
         rz_id = self.routing_zone_get(bp_id, data["label"])
         dhcp_servers = { "items": data["dhcp_servers"] }
-        DS_PATH = f"/api/blueprints/{bp_id}/security-zones/{rz_id}/dhcp_servers"
+        DS_PATH = f"/api/blueprints/{bp_id}/security-zones/{rz_id}/dhcp-servers"
+        resp = self.http_put(DS_PATH, dhcp_servers)
+        print(f"resp of routing-zone/dhcp-servers should be 204: {resp.status}")
 
-        resp = self.http.request('PUT', DS_PATH, body=json.dumps(dhcp_servers), headers=self.json_token_header)
-        print(f"resp of routing-zone/dhcp-servers: {resp.status}")
+        loop_data = {
+            # "pool_ids": [ prefix.replace("/", "-") for prefix in data["leaf_loopback_ips"] ]
+            "pool_ids": data["leaf_loopback_ips"]
+        }
+        LOOP_PATH = f"/api/blueprints/{bp_id}/resource_groups/ip/" + requote_uri(f"sz:{rz_id} leaf_loopback_ips")
+        print(LOOP_PATH)
+        print(loop_data)
+        resp = self.http_put(LOOP_PATH, loop_data)
+        print(f"resp of routing-zone/leaf_loopbcka_ips got 202: {resp.status}")
+
+
+        # resp = self.http.request('PUT', )
+
 
 
 
