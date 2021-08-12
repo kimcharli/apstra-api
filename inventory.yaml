@@ -4,38 +4,20 @@ aos_server:
   port: 20759
   username: admin
   password: "RigidMarmot2%"
-resources:
-  ip_pools:
-  - name: apstra-pool
-    subnets: ["4.0.0.0/24", "4.0.1.0/24"]
-    tags: ["ip-pool"]
-  ip:
-  - group: spine_loopback_ips
-    pool: spine-loopback
-  - group: leaf_loopback_ips
-    pool: leaf-loopback
-  - group: spine_leaf_link_ips
-    pool: spine-leaf
-  asn:
-  - group: spine_asns
-    pool: vpod-evpn-asn-pool
-  - group: leaf_asns
-    pool: vpod-evpn-asn-pool
 blueprints:
 - id: evpn-vqfx_offbox-virtual
   routing_zones:
-  - label: crimson
-    vrf_name: crimson-vrf
+  - label: lab2
+    vrf_name: lab2-vrf
     vlan_id: 202
     sz_type: evpn
     dhcp_servers: [ "9.0.0.1" ]
     leaf_loopback_ips: [ "Private-10.0.0.0/8" ]
     to_generic_link_ips: [ "Private-192.168.0.0/16" ]
     virtual_networks:
-    - label: c-801
-      description: 'vlan 801'
+    - label: lab2-vn
+      description: 'lab2 vn with vlan 801'
       vn_type: vxlan
-      # security_zone_id: ccd2d9a6-1fc0-46b4-a1c4-9000faf25a59
       bound_to:
       - system_id: 08a0bd88-6184-48da-9d8c-4261ff259b86
         vlan_id: 801
@@ -43,52 +25,11 @@ blueprints:
       # virtual_gateway_ipv4: 8.0.1.1
       ipv4_enabled: true
       ipv4_subnet: 8.0.1.0/24
-      # vn_id: should be string
       dhcp_service: dhcpServiceDisabled
       # route_target: "10000:801"
-  policies:
-  - id: test1234
-    label: test1234
-    descriptin: ""
-    policy_type_name: batch
-    attributes:
-      subpolicies: []
-    visible: true
-    user_data: "{\"isSausage\": true,\"positions\":{}}"
-    tags: []
   
 
     
-
-
-
-
-
-#    test1234 = { "virtual_networks":[{"virtual_gateway_ipv4_enabled":true,"vn_id":null,"vn_type":"vxlan",
-# "svi_ips":[{"system_id":"a4295414-0810-43dd-913e-32075b581a62","ipv4_mode":"enabled","ipv4_addr":null,
-# "ipv6_mode":"disabled","ipv6_addr":null},{"system_id":"f05f2abb-fd9f-4c09-91a7-76ce06bcb5e4","ipv4_mode":"enabled",
-# "ipv4_addr":null,"ipv6_mode":"disabled","ipv6_addr":null},{"system_id":"08a0bd88-6184-48da-9d8c-4261ff259b86",
-# "ipv4_mode":"enabled","ipv4_addr":null,"ipv6_mode":"disabled","ipv6_addr":null}],
-# "virtual_gateway_ipv4":null,"ipv6_subnet":null,"bound_to":[{"system_id":"dc31602f-fc0a-4388-a1eb-7a1dc19eca6e",
-# "access_switch_node_ids":[],"vlan_id":801},{"system_id":"08a0bd88-6184-48da-9d8c-4261ff259b86","access_switch_node_ids":[],
-# "vlan_id":801}],"vni_ids":[],"virtual_gateway_ipv6":null,"ipv4_subnet":"8.0.1.0/24",
-# "rt_policy":{"import_RTs":null,"export_RTs":null},"label":"c-801","ipv4_enabled":true,"virtual_gateway_ipv6_enabled":false,
-# "ipv6_enabled":false,"security_zone_id":"ccd2d9a6-1fc0-46b4-a1c4-9000faf25a59","dhcp_service":"dhcpServiceDisabled",
-# "create_policy_tagged":true}]}
-
-  # - id: external-router-peering
-  #   label: External Router Peering
-  #   description: ""
-  #   policy_type_name: batch
-  #   attributes:
-  #     subpolicies:
-  #     - e0541819-4033-42db-993d-43e6c7acfe10
-  #     - d3053c52-1967-442b-bb13-f41ccb0d50ad
-  #   visible: True
-  #   user_data: '{"isSausage":true,"positions":{"81ef6ccb-e7db-4f99-9282-31f9a11fdeb7":[290,80,1],"2dc376b3-bae4-403a-940d-b949db184981":[290,150,2],"96614294-0ec5-4137-97c7-edc78e87f912":[506,80,3],"7be72069-cc5b-48f7-9f2f-c138a470a57c":[506,150,4]}}'
-  #   tags:
-  #   - Router
-
 
 
 
