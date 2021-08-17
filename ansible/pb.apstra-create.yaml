@@ -1,0 +1,58 @@
+---
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  vars:
+    aos_url: "https://{{ aos.aos_server.host }}:{{aos.aos_server.port}}"
+    header_json:
+      Content-Type: application/json
+    # header_auth_json: This will be formed in task Register AuthToken
+  tasks:
+  - name: Includes vars
+    include_vars:
+      file: "../inventory.yaml"
+      name: aos
+    tags:
+    - always
+
+  - name: Include Auth
+    include_role:
+      name: auth
+    tags:
+    - always
+
+  - name: Set Blueprint ID
+    set_fact:
+      blueprint_id: "{{ aos.blueprints.0.id }}"
+
+  # - debug: var=aos.blueprints.0.routing_zones
+
+  - name: Role Create Routing Zone
+    include_role:
+      name: routing_zone
+    loop:
+    - "{{ aos.blueprints.0.routing_zones }}"
+    loop_control:
+      loop_var: this_routing_zone
+    tags:
+    - routing_zone_add
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

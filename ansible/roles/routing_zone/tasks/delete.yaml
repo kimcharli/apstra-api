@@ -1,0 +1,26 @@
+---
+- name: Find Routing Zone
+  include_role:
+    name: routing_zone
+    tasks_from: find
+  tags:
+  - always
+
+- name: Delete Routing Zone
+  uri:
+    method: DELETE
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/security-zones/{{ routing_zone_id }}"
+    validate_certs: no
+    return_content: yes
+    status_code: 204
+  register: routing_zones_delete_return
+  when: routing_zone_id is defined
+  tags:
+  - always
+
+
+
+
+
+

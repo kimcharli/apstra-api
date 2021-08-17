@@ -1,0 +1,31 @@
+---
+- name: Get AuthToken
+  uri:
+    method: POST
+    url: "{{aos_url}}/api/aaa/login"
+    validate_certs: no
+    return_content: yes
+    body_format: json
+    body: "{ 'username': '{{ aos.aos_server.username }}', 'password': '{{ aos.aos_server.password }}' }"
+    status_code: 201
+  register: auth_return
+  tags:
+  - always
+  - auth
+
+# - debug: var=auth_return
+
+- name: Register AuthToken
+  set_fact:
+    AuthToken: "{{auth_return.json.token}}"
+    header_auth_json:
+      Content-Type: application/json
+      AuthToken: "{{auth_return.json.token}}"
+  tags:
+  - always
+  - auth
+
+- debug: var=AuthToken
+  tags:
+  - always
+  - auth

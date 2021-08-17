@@ -1,8 +1,1 @@
 ---
-aos:
-  server:
-    url: https://54.187.132.108:22109/
-    login: admin
-    password: "SafeCattle8!"
-
-

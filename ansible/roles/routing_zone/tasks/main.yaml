@@ -1,0 +1,82 @@
+---
+- name: Find Routing Zone
+  include_role:
+    name: routing_zone
+    tasks_from: find
+  tags:
+  - always
+
+- name: Create a Routing Zones
+  uri:
+    method: POST
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/security-zones"
+    validate_certs: no
+    return_content: yes
+    body_format: json
+    body: "{ 'sz_type': 'evpn', 'label': '{{this_routing_zone.0.label}}', 'vrf_name': '{{this_routing_zone.0.label}}-vrf', 'vlan_id': {{this_routing_zone.0.vlan_id}} }"
+    status_code: 201
+  register: routing_zones_create_return
+  when: routing_zone_id is not defined
+  tags:
+  - always
+  - routing_zone_add
+
+- debug: var=routing_zones_create_return
+  when: routing_zones_create_return is not skipped
+
+- name: Set routing_zone_id
+  set_fact:
+    routing_zone_id: "{{routing_zones_create_return.json.id}}"
+  when: routing_zones_create_return is not skipped
+
+- name: Associate dhcp-servers
+  uri:
+    method: PUT
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/security-zones/{{ routing_zone_id }}/dhcp-servers"
+    validate_certs: no
+    return_content: yes
+    body_format: json
+    body: "{ 'items': {{ this_routing_zone.0.dhcp_servers }} }"
+    status_code: 204
+  register: routing_zones_create_return
+  tags:
+  - always
+
+  # - debug: msg="{{this_routing_zone}}"
+
+# - name: Set pool_ids
+#   set_fact:
+#     # pool_ids: "{{this_routing_zone.0.leaf_loopback_ips | map('regex_replace', '.', '_') }}"
+#     pool_ids: "{{this_routing_zone.0.leaf_loopback_ips }}"
+
+- name: translate pool_ids
+  pool_ids_translate:
+    data: "{{this_routing_zone.0.leaf_loopback_ips}}"
+  register: pool_ids
+
+# - name: Compose pool_ids
+#   set_fact:
+#     pool_ids_composed: "{ 'pool_ids': {{pool_ids.result}} }"
+
+# - debug: var=pool_ids_composed
+ 
+
+- name: Associate loopback
+  uri:
+    method: PUT
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/resource_groups/ip/sz%3A{{ routing_zone_id }}%2Cleaf_loopback_ips"
+    validate_certs: no
+    return_content: yes
+    body_format: json
+    body: "{ 'pool_ids': {{ pool_ids.result }} }"
+    status_code: 202
+  register: associate_loopback_return
+  tags:
+  - always
+
+
+
+
