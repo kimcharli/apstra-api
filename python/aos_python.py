@@ -4,6 +4,8 @@ import yaml
 import requests
 import urllib3
 import json
+import sys
+import time
 
 
 class AosRz:
@@ -105,10 +107,13 @@ class AosServer:
     def routing_zone_get(self, bp_id, rz_name) -> str:
         routing_zone_url = f"/api/blueprints/{bp_id}/security-zones"
         resp = self.http_get(routing_zone_url)
-        rzs = json.loads(resp.data)["items"]
+        rzs = json.loads(resp.data)["items"]        
         for rz in rzs:
+            print(f"label: {rzs[rz]['label']}, rz_name: {rz_name}")
             if rzs[rz]["label"] == rz_name:
-                return rzs[rz]["id"]
+                rz_id = rzs[rz]["id"]
+                print(f"routing_zone_id: {rz_id}")
+                return rz_id
 
     def routing_zone_add(self, bp_id, data) -> None:
         routing_zone_url = f"/api/blueprints/{bp_id}/security-zones"
@@ -119,6 +124,9 @@ class AosServer:
             "vlan_id": data["vlan_id"]
             }
         resp = self.http_post(routing_zone_url, routing_zone_spec, expected=201)
+
+        # TODO: monitor job
+        time.sleep(5)
         
         routing_zone_id = self.routing_zone_get(bp_id, data["label"])
         dhcp_server_url = f"/api/blueprints/{bp_id}/security-zones/{routing_zone_id}/dhcp-servers"
@@ -193,19 +201,18 @@ def main():
 
     aos_server = AosServer(AOS_ENV["aos_server"]["host"], AOS_ENV["aos_server"]["port"], AOS_ENV["aos_server"]["username"], AOS_ENV["aos_server"]["password"])
 
-    # aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
 
-
-    # aos_server.context_template_add(bp_id, AOS_ENV["blueprints"][0]["policies"])
-
-    # aos_server.routing_zone_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0])
-    # aos_server.virtual_networks_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0]["virtual_networks"], AOS_ENV["blueprints"][0]["routing_zones"][0]["label"])
-
-
-    # aos_server.context_template_delete(bp_id, "test1234")
-
-    aos_server.virtual_networks_delete(bp_id, "c-801")
-    aos_server.routing_zone_delete(bp_id, "crimson")
+    if len(sys.argv) >1 and sys.argv[1] == "delete":
+        print( "deleting")
+        aos_server.virtual_networks_delete(bp_id, "c-801")
+        aos_server.routing_zone_delete(bp_id, "lab2")
+        # aos_server.context_template_delete(bp_id, "test1234")
+    else:
+        print( "creating")
+        # aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
+        aos_server.routing_zone_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0])
+        aos_server.virtual_networks_add(bp_id, AOS_ENV["blueprints"][0]["routing_zones"][0]["virtual_networks"], AOS_ENV["blueprints"][0]["routing_zones"][0]["label"])
+        # aos_server.context_template_add(bp_id, AOS_ENV["blueprints"][0]["policies"])
 
 if __name__ == "__main__":
     main()
