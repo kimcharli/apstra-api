@@ -1,0 +1,18 @@
+---
+- name: List Virtual Networks
+  uri:
+    method: GET
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/virtual-networks"
+    validate_certs: no
+    return_content: yes
+    status_code: 200
+  register: virtual_network_return
+
+- name: Set virtaul_network_id
+  set_fact:
+    virtaul_network_id: "{{ item.value.id }}"
+  with_dict: "{{virtual_network_return.json['virtual_networks']}}"
+  when: item.value.label == this_virtual_network.0.label
+
+- debug: var=virtual_network_id

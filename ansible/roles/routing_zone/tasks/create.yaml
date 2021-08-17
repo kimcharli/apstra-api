@@ -78,5 +78,15 @@
   - always
 
 
+- name: Role Create Virtual Network
+  include_role:
+    name: virtual_network
+    tasks_from: create
+  loop:
+  - "{{ this_routing_zone.0.virtual_networks }}"
+  loop_control:
+    loop_var: this_virtual_network
+
+
 
 

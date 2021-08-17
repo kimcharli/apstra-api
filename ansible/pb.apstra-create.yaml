@@ -30,6 +30,7 @@
   - name: Role Create Routing Zone
     include_role:
       name: routing_zone
+      tasks_from: create
     loop:
     - "{{ aos.blueprints.0.routing_zones }}"
     loop_control:

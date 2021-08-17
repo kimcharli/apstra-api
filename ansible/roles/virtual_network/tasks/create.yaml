@@ -1,0 +1,24 @@
+---
+
+# - debug: var=this_virtual_network
+
+- name: Build Virtual Network Spec
+  virtual_network_spec:
+    spec: "{{this_virtual_network.0}}"
+    routing_zone_id: "{{ routing_zone_id }}"
+  register: vn_spec_built
+
+- debug: var=vn_spec_built.result
+
+- name: Create a Virtual Network
+  uri:
+    method: POST
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/virtual-networks"
+    validate_certs: no
+    return_content: yes
+    body_format: json
+    body: "{{ vn_spec_built.result }}"
+    status_code: 201
+  register: vn_create_return
+

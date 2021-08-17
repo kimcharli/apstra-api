@@ -1,0 +1,18 @@
+---
+- name: Find Virtual Network
+  include_role:
+    name: virtual_network
+    tasks_from: find
+
+# - debug: var=this_virtual_network
+
+- name: Delete Virtual Network
+  uri:
+    method: DELETE
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/virtual-networks/{{ virtaul_network_id }}?async=full"
+    validate_certs: no
+    return_content: yes
+    status_code: 202
+  register: vn_delete_return
+  when: virtual_network_id is defined
