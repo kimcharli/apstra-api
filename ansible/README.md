@@ -1,11 +1,5 @@
-#
+# ansible
 
-## setup
-
-```
-python3 -m venv ~/venv/aos-ansible
-source ~/venv/aos-ansible/bin/activate
-```
 
 
 ## Build blueprint via playbook
