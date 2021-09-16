@@ -179,10 +179,20 @@ class AosServer:
             print(f"vn_batch_spec: {resp.data}")
 
     def virtual_networks_add(self, bp_id, networks, routing_zone_label ):
+        nodes_url = f"/api/blueprints/{bp_id}/nodes"
+        nodes = json.loads(self.http_get(nodes_url, expected=200).data)['nodes']
+        systems = {} # system_label: system_id
+        for k, v in nodes.items():
+            if v["type"] == "system":
+                systems[v["label"]] = v["id"]
+
         routing_zone_id = self.routing_zone_get(bp_id, routing_zone_label)
         vn_batch_url = f"/api/blueprints/{bp_id}/virtual-networks"
         for vn in networks:
             vn["security_zone_id"] = routing_zone_id
+            for i in range(len(vn["bound_to"])):
+                vn["bound_to"][i]["system_id"] = systems[vn["bound_to"][i]["system_label"]]
+                # print(system)
             self.http_post(vn_batch_url, vn, expected=201)
 
 

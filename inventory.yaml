@@ -1,9 +1,15 @@
 ---
 aos_server:
-  host: 18.224.213.67
-  port: 20759
+  host: 3.15.137.68
+  port: 23759
+  # host: 172.20.5.3
+  # port: 443
   username: admin
-  password: "RigidMarmot2%"
+  password: "FocusedHare3%"
+  # host: 34.209.126.161
+  # port: 23909
+  # username: admin
+  # password: "ExcellentLark3$"
 blueprints:
 - id: evpn-vqfx_offbox-virtual
   routing_zones:
@@ -15,11 +21,15 @@ blueprints:
     leaf_loopback_ips: [ "Private-10.0.0.0/8" ]
     to_generic_link_ips: [ "Private-192.168.0.0/16" ]
     virtual_networks:
-    - label: lab2-vn
+    - label: lab2
       description: 'lab2 vn with vlan 801'
       vn_type: vxlan
       bound_to:
-      - system_id: 08a0bd88-6184-48da-9d8c-4261ff259b86
+      - system_label: leaf1
+        vlan_id: 801
+      - system_label: leaf2
+        vlan_id: 801
+      - system_label: leaf3
         vlan_id: 801
       virtual_gateway_ipv4_enabled: true
       # virtual_gateway_ipv4: 8.0.1.1
