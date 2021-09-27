@@ -37,6 +37,22 @@ blueprints:
       ipv4_subnet: 8.0.1.0/24
       dhcp_service: dhcpServiceDisabled
       # route_target: "10000:801"
+    - label: lab811
+      description: 'lab2 vn with vlan 801'
+      vn_type: vxlan
+      bound_to:
+      - system_label: leaf1
+        vlan_id: 811
+      - system_label: leaf2
+        vlan_id: 811
+      - system_label: leaf3
+        vlan_id: 811
+      virtual_gateway_ipv4_enabled: true
+      # virtual_gateway_ipv4: 8.0.1.1
+      ipv4_enabled: true
+      ipv4_subnet: 8.0.11.0/24
+      dhcp_service: dhcpServiceDisabled
+      # route_target: "10000:801"
   
 
     

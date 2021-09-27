@@ -42,6 +42,23 @@ python python/aos_python.py delete
 deactivate
 ```
 
+## run ansible playbook
+
+### create
+```
+source ansible/venv/bin/activate
+ansible-playbook ansible/pb.apstra-create.yaml
+deactivate
+```
+
+### destroy
+```
+source ansible/venv/bin/activate
+ansible-playbook ansible/pb.apstra-delete.yaml
+deactivate
+```
+
+
 
 
 

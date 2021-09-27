@@ -188,12 +188,71 @@ class AosServer:
 
         routing_zone_id = self.routing_zone_get(bp_id, routing_zone_label)
         vn_batch_url = f"/api/blueprints/{bp_id}/virtual-networks"
+        policy_import_url = f"/api/blueprints/{bp_id}/obj-policy-import"
         for vn in networks:
             vn["security_zone_id"] = routing_zone_id
             for i in range(len(vn["bound_to"])):
                 vn["bound_to"][i]["system_id"] = systems[vn["bound_to"][i]["system_label"]]
                 # print(system)
-            self.http_post(vn_batch_url, vn, expected=201)
+            new_vn = self.http_post(vn_batch_url, vn, expected=201)
+            vn_node_id = json.loads(new_vn.data)["id"]
+
+            policy_name = f"vlan_{vn['label']}_vxlan_vlan_tagged"
+            vn_policy = {
+                "policies": [
+                    {
+                        "id": f"vn_endpoint_{policy_name}",
+                        "label": policy_name,
+                        "description": f"vlan {vn['label']} vxlan vlan tagged",
+                        "policy_type_name": "batch",
+                        "attributes": {
+                            "subpolicies": [
+                                f"pipeline_{policy_name}"
+                            ]
+                        },
+                        "user_data": "{\"isSausage\": true}",
+                        "visible": True,
+                        "tags": [],
+                    },
+                    {
+                        "id": f"pipeline_{policy_name}",
+                        "label": "Virtual Network (Single) (pipeline)",
+                        "description": "Add a single VLAN to interfaces, as tagged or untagged.",
+                        "policy_type_name": "pipeline",
+                        "attributes": {
+                            "first_subpolicy": policy_name,
+                            "second_subpolicy": f"noop_{policy_name}"
+                        },
+                        "visible": False,
+                        "tags": []                    
+                    },
+                    {
+                        "id": policy_name,
+                        "label": "Virtual Network (Single)",
+                        "description": "",
+                        "policy_type_name": "AttachSingleVLAN",
+                        "attributes": {
+                            "vn_node_id": vn_node_id,
+                            "tag_type": "vlan_tagged"
+                        },
+                        "visible": False,
+                        "tags": [],
+                    },
+                    {
+                        "id": f"noop_{policy_name}",
+                        "label": "noop",
+                        "description": "",
+                        "policy_type_name": "noop",
+                        "attributes": {},
+                        "visible": False,
+                        "tags": [],
+                    }
+                ]
+            }
+            self.http_put(policy_import_url, vn_policy, expected=204)
+            
+
+
 
 
     def virtual_networks_delete(self, bp_id, vn_name ) -> None:
