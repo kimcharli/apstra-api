@@ -24,6 +24,7 @@ blueprints:
     - label: lab2
       description: 'lab2 vn with vlan 801'
       vn_type: vxlan
+      vlan_id: 801
       bound_to:
       - system_label: leaf1
         vlan_id: 801
@@ -40,6 +41,7 @@ blueprints:
     - label: lab811
       description: 'lab2 vn with vlan 801'
       vn_type: vxlan
+      vlan_id: 811
       bound_to:
       - system_label: leaf1
         vlan_id: 811
@@ -53,6 +55,19 @@ blueprints:
       ipv4_subnet: 8.0.11.0/24
       dhcp_service: dhcpServiceDisabled
       # route_target: "10000:801"
+  systems:
+  - label: leaf1
+    role: leaf
+  - label: leaf2
+    role: leaf
+  - label: leaf3
+    role: leaf
+    interfaces:
+    - if_name: xe-0/0/2
+      vns:
+      - lab2
+      
+
   
 
     

@@ -28,19 +28,15 @@ setup
 
 ## run python script
 
-### create
+### run
 ```
 source python/venv/bin/activate
-python python/aos_python.py create
+python python/aos_python.py
 deactivate
 ```
 
 ### destroy
-```
-source python/venv/bin/activate
-python python/aos_python.py delete
-deactivate
-```
+use Time Voyager, jump to theversion in GUI
 
 ## run ansible playbook
 
