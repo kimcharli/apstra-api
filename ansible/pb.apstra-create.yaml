@@ -10,7 +10,7 @@
   tasks:
   - name: Includes vars
     include_vars:
-      file: "../inventory.yaml"
+      file: "../inventory-ansible.yaml"
       name: aos
     tags:
     - always

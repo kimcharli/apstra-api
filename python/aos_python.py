@@ -335,7 +335,7 @@ class AosServer:
 
 
 def main():
-    with open(r'inventory.yaml') as file:
+    with open(r'inventory-python.yaml') as file:
         AOS_ENV = yaml.load(file, Loader=yaml.FullLoader)
 
     bp_id = AOS_ENV["blueprints"][0]["id"]

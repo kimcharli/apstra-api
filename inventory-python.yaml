@@ -1,0 +1,79 @@
+---
+aos_server:
+  host: 3.15.137.68
+  port: 23759
+  # host: 172.20.5.3
+  # port: 443
+  username: admin
+  password: "FocusedHare3%"
+  # host: 34.209.126.161
+  # port: 23909
+  # username: admin
+  # password: "ExcellentLark3$"
+blueprints:
+- id: evpn-vqfx_offbox-virtual
+  routing_zones:
+  - label: lab2
+    vrf_name: lab2-vrf
+    vlan_id: 202
+    sz_type: evpn
+    dhcp_servers: [ "9.0.0.1" ]
+    leaf_loopback_ips: [ "Private-10.0.0.0/8" ]
+    to_generic_link_ips: [ "Private-192.168.0.0/16" ]
+    virtual_networks:
+    - label: lab2
+      description: 'lab2 vn with vlan 801'
+      vn_type: vxlan
+      vlan_id: 801
+      bound_to:
+      - system_label: leaf1
+        vlan_id: 801
+      - system_label: leaf2
+        vlan_id: 801
+      - system_label: leaf3
+        vlan_id: 801
+      virtual_gateway_ipv4_enabled: true
+      # virtual_gateway_ipv4: 8.0.1.1
+      ipv4_enabled: true
+      ipv4_subnet: 8.0.1.0/24
+      dhcp_service: dhcpServiceDisabled
+      # route_target: "10000:801"
+    - label: lab811
+      description: 'lab2 vn with vlan 801'
+      vn_type: vxlan
+      vlan_id: 811
+      bound_to:
+      - system_label: leaf1
+        vlan_id: 811
+      - system_label: leaf2
+        vlan_id: 811
+      - system_label: leaf3
+        vlan_id: 811
+      virtual_gateway_ipv4_enabled: true
+      # virtual_gateway_ipv4: 8.0.1.1
+      ipv4_enabled: true
+      ipv4_subnet: 8.0.11.0/24
+      dhcp_service: dhcpServiceDisabled
+      # route_target: "10000:801"
+  systems:
+  - label: leaf1
+    role: leaf
+  - label: leaf2
+    role: leaf
+  - label: leaf3
+    role: leaf
+    interfaces:
+    - if_name: xe-0/0/2
+      vns:
+      - lab2
+      
+
+  
+
+    
+
+
+
+
+
+
