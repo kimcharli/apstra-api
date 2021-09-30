@@ -27,6 +27,46 @@
 
   # - debug: var=aos.blueprints.0.routing_zones
 
+  - name: Build VN to Interfaces Table
+    aos_vn_intf_table:
+      systems: "{{ aos.blueprints.0.systems }}"
+    register: rs_vn_intf
+
+  # - name: Print rs_vn_intf
+  #   debug: var=rs_vn_intf
+
+  - name: Register VN to Interfaces Table
+    set_fact:
+      vn_intf_dict: "{{ rs_vn_intf.result }}"
+
+  - name: Content of vn_intf_dict
+    debug: var=vn_intf_dict
+
+  - name: Get AOS Systems by GRAPH
+    uri:
+      method: POST
+      headers: "{{ header_auth_json }}"
+      url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/qe?type=operation"
+      validate_certs: no
+      return_content: yes
+      body_format: json
+      body: "{{ lookup('template', '../templates/query_system.j2') }}"
+      status_code: 200
+    register: rs_aos_nodes
+
+  - name: Build System to System ID
+    aos_get_system_id:
+      systems: "{{ rs_aos_nodes.json }}"
+    register: rs_aos_system_id
+
+  - name: Register 
+    set_fact:
+      aos_system_ids: "{{ rs_aos_system_id.result }}"
+  
+  - name: Content of aos_system_ids
+    debug: var=aos_system_ids
+
+
   - name: Role Create Routing Zone
     include_role:
       name: routing_zone

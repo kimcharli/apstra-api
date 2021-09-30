@@ -1,11 +1,13 @@
 ---
 
-# - debug: var=this_virtual_network
+- name: Virtual Network To Process
+  debug: var=this_virtual_network
 
 - name: Build Virtual Network Spec
-  virtual_network_spec:
-    spec: "{{this_virtual_network.0}}"
+  aos_virtual_network_spec:
+    spec: "{{this_virtual_network}}"
     routing_zone_id: "{{ routing_zone_id }}"
+    systems: "{{ aos_system_ids }}"
   register: vn_spec_built
 
 - debug: var=vn_spec_built.result
@@ -22,3 +24,32 @@
     status_code: 201
   register: vn_create_return
 
+# - debug: var=vn_create_return
+
+- name: Set Virtual Network ID
+  set_fact:
+    vn_node_id: "{{ vn_create_return.json.id }}"
+
+- name: Value of vn_id
+  debug: var=vn_node_id
+
+- name: Set Policy Names
+  set_fact:
+    ct_policy_name: "{{ routing_zone_id }}_{{this_virtual_network.vn_type}}_{{this_virtual_network.vlan_id}}_vlan_tagged"
+    vn_ep_name: "vn_endpoints_{{ routing_zone_id }}_{{this_virtual_network.vn_type}}_{{this_virtual_network.vlan_id}}_vlan_tagged"
+
+- name: Create a Connectivity Template
+  uri:
+    method: PUT
+    headers: "{{ header_auth_json }}"
+    url: "{{ aos_url }}/api/blueprints/{{ blueprint_id }}/obj-policy-import"
+    validate_certs: no
+    return_content: yes
+    body_format: json
+    body: "{{ lookup('template', '../templates/connectivity_template.j2') }}"
+    status_code: 204
+  register: vn_create_return
+
+# - name: Create Association Spec To Attach
+#   aos_attach_spec:
+#     vn_intfs: "{{ vn_intf_dict[this_virtual_network.label] }}"

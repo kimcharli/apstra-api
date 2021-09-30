@@ -52,7 +52,7 @@
 #     pool_ids: "{{this_routing_zone.0.leaf_loopback_ips }}"
 
 - name: translate pool_ids
-  pool_ids_translate:
+  aos_pool_ids_translate:
     data: "{{this_routing_zone.0.leaf_loopback_ips}}"
   register: pool_ids
 
@@ -78,12 +78,14 @@
   - always
 
 
+# - name: The Virtual Networks to process
+#   debug: var=this_routing_zone.0.virtual_networks
+
 - name: Role Create Virtual Network
   include_role:
     name: virtual_network
     tasks_from: create
-  loop:
-  - "{{ this_routing_zone.0.virtual_networks }}"
+  loop: "{{ this_routing_zone.0.virtual_networks }}"
   loop_control:
     loop_var: this_virtual_network
 

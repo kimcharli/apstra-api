@@ -26,6 +26,10 @@ setup
 └── setup-venv-ubuntu16.sh
 ```
 
+## updat inventory
+
+inventory.yaml
+
 ## run python script
 
 ### run
@@ -48,6 +52,7 @@ deactivate
 ```
 
 ### destroy
+TODO:
 ```
 source ansible/venv/bin/activate
 ansible-playbook ansible/pb.apstra-delete.yaml

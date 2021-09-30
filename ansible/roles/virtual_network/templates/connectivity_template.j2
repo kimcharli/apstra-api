@@ -1,0 +1,51 @@
+{
+    "policies": [
+        {
+            "id": "{{vn_ep_name}}",
+            "label": "{{vn_ep_name}}",
+            "description": "vlan {{this_virtual_network.label}} vxlan vlan tagged",
+            "policy_type_name": "batch",
+            "attributes": {
+                "subpolicies": [
+                    "pipeline_{{ct_policy_name}}"
+                ]
+            },
+            "user_data": "{\"isSausage\": true}",
+            "visible": True,
+            "tags": [],
+        },
+        {
+            "id": "pipeline_{{ct_policy_name}}",
+            "label": "Virtual Network (Single) (pipeline)",
+            "description": "Add a single VLAN to interfaces, as tagged or untagged.",
+            "policy_type_name": "pipeline",
+            "attributes": {
+                "first_subpolicy": "{{ct_policy_name}}",
+                "second_subpolicy": "noop_{{ct_policy_name}}"
+            },
+            "visible": False,
+            "tags": []                    
+        },
+        {
+            "id": "{{ct_policy_name}}",
+            "label": "Virtual Network (Single)",
+            "description": "",
+            "policy_type_name": "AttachSingleVLAN",
+            "attributes": {
+                "vn_node_id": "{{vn_node_id}}",
+                "tag_type": "vlan_tagged"
+            },
+            "visible": False,
+            "tags": [],
+        },
+        {
+            "id": "noop_{{ct_policy_name}}",
+            "label": "noop",
+            "description": "",
+            "policy_type_name": "noop",
+            "attributes": {},
+            "visible": False,
+            "tags": [],
+        }
+    ]
+}
