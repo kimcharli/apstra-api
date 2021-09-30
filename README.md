@@ -10,6 +10,21 @@ cd apstra-api
 sh setup/setup-venv-ubuntu16.sh
 ```
 
+### ubuntu16 python only
+```
+git clone https://github.com/kimcharli/apstra-api.git
+cd apstra-api
+sh setup/setup-venv-ubuntu16-python.sh
+```
+
+### ubunt16 ansible only
+```
+git clone https://github.com/kimcharli/apstra-api.git
+cd apstra-api
+sh setup/setup-venv-ubuntu16-ansible.sh
+```
+
+
 ### with mac
 
 ```
