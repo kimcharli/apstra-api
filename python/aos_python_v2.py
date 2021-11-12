@@ -211,11 +211,23 @@ class AosBp:
             rz = AosRz(self.aos_server, self, rz_id, self.data["routing_zones"][rz_id] )
 
 
-    def commit(self, bp_id, description='commit by script') -> urllib3.response.HTTPResponse:
+    def commit(self, description='commit by script') -> urllib3.response.HTTPResponse:
         # get revision id
         revision_url = f"/api/blueprints/{self.id}/revisions"
         revision_data = json.loads(self.aos_server.http_get(revision_url,expected=200).data)
         revision_id = int(revision_data["items"][-1]["revision_id"]) + 10
+
+        # check the tasks - need more check than this
+        task_url = f"/api/blueprints/{self.id}/tasks?mode=full&filter=status%20in%20%5B%27in_progress%27%2C%20%27init%27%5D"
+        while True:
+            resp = self.aos_server.http_get(task_url,expected=200)
+            running_task_count = len(json.loads(resp.data)["items"])
+            print(f"==== tasks running: {resp.data}")
+            if running_task_count:
+                print(f"==== tasks running: {running_task_count}")
+                time.sleep(5)
+            else:
+                break
 
         # TODO: fix. currently needs GUI to commit
         commit_url = f"/api/blueprints/{self.id}/deploy?async=full"
@@ -373,18 +385,26 @@ class AosServer:
 
 
 def main():
-    wb = AosXlsx("fabric-1.xlsx", "temp/temp.yaml")
+    fabric_excel = "fabric-1.xlsx"
+    fabric_yaml = "temp/temp.yaml"
+    if len(sys.argv) > 1:
+        fabric_excel = sys.argv[1]
+    print(f"======== main(): sys.argv: {sys.argv}")
+    print(f"====== main(): fabric_excel: {fabric_excel}")
+    print(f"====== main(): fabric_excel: {fabric_yaml}")
+    wb = AosXlsx(fabric_excel, fabric_yaml)
     wb.run_all()
-    print(f"====== inventory: {wb.inventory}")
+    print(f"====== main(): inventory: {wb.inventory}")
     aos_server = AosServer(wb.inventory)
     
 
-    print( "creating")
+    print( "====== main(): blueprint creating")
     # aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
     aos_server.create_blueprints()
     # # TODO: implement async
     # # time.sleep(10)
     # aos_server.commit(bp_id)
+    print( "====== main(): blueprint done")
 
 if __name__ == "__main__":
     main()

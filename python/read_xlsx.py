@@ -92,6 +92,11 @@ class AosXlsx:
                     this_routing_zone = ws.cell(row=row_num, column=headers[header]).value                
                 elif header == "virtual_network":
                     my_id = ws.cell(row=row_num, column=headers[header]).value                
+                elif header == "description":
+                    if ws.cell(row=row_num, column=headers[header]).value:
+                        this_virtual_network[header] = ws.cell(row=row_num, column=headers[header]).value
+                    else:
+                        this_virtual_network[header] = my_id
                 else:
                     this_virtual_network[header] = ws.cell(row=row_num, column=headers[header]).value
             # skip empty row
