@@ -35,14 +35,14 @@ class AosXlsx:
 
     def read_blueprints(self):
         sheet_name = "blueprints"
-        expected = {'label': 1 }
+        expected = {'blueprint': 1 }
         (ws, headers) = self.read_header(sheet_name, expected)
 
         for row_num in range(2, ws.max_row+1):
             my_id = ''
             this_blueprint = {"routing_zones": {}, "systems": {}}
             for header in headers:
-                if header == "label":
+                if header == "blueprint":
                     my_id = ws.cell(row=row_num, column=headers[header]).value                
                 else:
                     this_blueprint[header] = ws.cell(row=row_num, column=headers[header]).value
@@ -165,9 +165,25 @@ class AosXlsx:
         # self.write_yaml()
 
 
+def main():
+
+    import sys    
+    excel_file = "temp/fabric-day2.xlsx" 
+    yaml_file = "temp/temp.yaml"
+    if len(sys.argv) > 1:
+        excel_file = sys.argv[1]
+    print(f"======== main(): sys.argv: {sys.argv}")
+    print(f"====== main(): fabric_excel: {excel_file}")
+    print(f"====== main(): fabric_excel: {yaml_file}")
+
+    wb = AosXlsx(excel_file, yaml_file)
+    # wb.run_all()
+
+
 if __name__ == "__main__":
-    wb = AosXlsx("fabric-day2.xlsx", "temp/temp.yaml")
-    wb.run_all()
+    main()
+
+
 
 
 

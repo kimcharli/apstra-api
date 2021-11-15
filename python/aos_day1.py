@@ -197,14 +197,83 @@ class AosRz:
 
 
 class AosBp:
-    def __init__(self, aos_server, bp_id, blueprint) -> None:
+    def __init__(self, aos_server, bp_id: str, blueprint: dict, phase: str) -> None:
+        print_prefix = "==== AosBp.__init():"
         self.aos_server = aos_server
-        print(f"==== AosBP.__init__(): blueprint={bp_id}")
+        print(f"{print_prefix} blueprint={bp_id}")
         self.id = bp_id
         self.data = blueprint
-        print(f"==== AosBP.__init__: data: {self.data}")
-        self.create_routingzones()
-        resp = self.commit("commit by script")
+        self.phase = phase
+        print(f"{print_prefix} data: {self.data}")
+
+        if self.phase == "day1":
+            bp_url = f"/api/blueprints?async=full"
+            bp_spec = {
+                "design": self.data["design"],
+                "init_type": self.data["init_type"],
+                "label": self.id,
+                "template_id": self.data["template_id"]
+            }            
+            resp = self.aos_server.http_post(bp_url, bp_spec, expected=202)
+            print(f"{print_prefix} resp: {resp.data}")
+            self.uuid = json.loads(resp.data)["id"]
+            task_id = json.loads(resp.data)["task_id"]
+            print(f"{print_prefix} uuid: {self.uuid}, task_id: {task_id}")
+
+            for i in range(5):
+                task_url = f"/api/blueprints/{self.uuid}/tasks/{task_id}"
+                resp = self.aos_server.http_get(task_url)
+                task_status = json.loads(resp.data)['status']
+                print(f"{print_prefix} task status: {task_status}")
+                if task_status == "succeeded":
+                    break
+                time.sleep(5)
+
+
+            asns_spines_url = f"/api/blueprints/{self.uuid}/resource_groups/asn/spine_asns"
+            asns_spines_spec = {
+                "pool_ids": self.data["asns_spines"].split(',')
+            }
+            resp = self.aos_server.http_put(asns_spines_url, asns_spines_spec, expected=202)
+            # empty payload
+
+            asns_leaf_url = f"/api/blueprints/{self.uuid}/resource_groups/asn/leaf_asns"
+            asns_leaf_spec = {
+                "pool_ids": self.data["asns_leafs"].split(',')
+            }
+            resp = self.aos_server.http_put(asns_leaf_url, asns_leaf_spec, expected=202)
+            # empty payload
+
+            lo0_spines_url = f"/api/blueprints/{self.uuid}/resource_groups/ip/spine_loopback_ips"
+            lo0_spines_spec = {
+                "pool_ids": self.data["spine_loopback_ips"].split(',')
+            }
+            resp = self.aos_server.http_put(lo0_spines_url, lo0_spines_spec, expected=202)
+            # empty payload
+
+            lo0_leafs_url = f"/api/blueprints/{self.uuid}/resource_groups/ip/leaf_loopback_ips"
+            lo0_leafs_spec = {
+                "pool_ids": self.data["leaf_loopback_ips"].split(',')
+            }
+            resp = self.aos_server.http_put(lo0_leafs_url, lo0_leafs_spec, expected=202)
+            # empty payload
+
+            spine_leaf_link_ips_url = f"/api/blueprints/{self.uuid}/resource_groups/ip/spine_leaf_link_ips"
+            spine_leaf_link_ips_spec = {
+                "pool_ids": self.data["spine_leaf_link_ips"].split(',')
+            }
+            resp = self.aos_server.http_put(spine_leaf_link_ips_url, spine_leaf_link_ips_spec, expected=202)
+            # empty payload
+
+
+
+
+
+
+
+        if self.phase == "day2":
+            self.create_routingzones()
+            resp = self.commit("commit by script")
 
     def create_routingzones(self) -> None:
         for rz_id in self.data["routing_zones"]:
@@ -335,10 +404,12 @@ class AosServer:
     
 
 
-    def create_blueprints(self) -> None:
-        print(f"==== self.inventory[bp]: {self.inventory['blueprints']}")
+    def create_blueprints(self, phase: str) -> None:
+        print_prefix = "==== AosServer.create_blueprints:"
+        print(f"{print_prefix} self.inventory[bp]: {self.inventory['blueprints']}")
+        self.phase = phase       
         for bp_id in self.inventory["blueprints"]:
-            AosBp(self, bp_id, self.inventory["blueprints"][bp_id] )
+            AosBp(self, bp_id, self.inventory["blueprints"][bp_id], phase)
 
 
 
@@ -385,29 +456,31 @@ class AosServer:
 
 
 def main():
-    fabric_excel = "fabric-day2.xlsx"
+    print_prefix = "======== main():"
+    fabric_excel = "fabric-day1.xlsx"
     fabric_yaml = "temp/temp.yaml"
     if len(sys.argv) > 1:
         fabric_excel = sys.argv[1]
-    print(f"======== main(): sys.argv: {sys.argv}")
-    print(f"====== main(): fabric_excel: {fabric_excel}")
-    print(f"====== main(): fabric_excel: {fabric_yaml}")
+    print(f"{print_prefix} sys.argv: {sys.argv}")
+    print(f"{print_prefix} fabric_excel: {fabric_excel}")
+    print(f"{print_prefix} fabric_excel: {fabric_yaml}")
     wb = AosXlsx(fabric_excel, fabric_yaml)
     wb.run_all()
-    print(f"====== main(): inventory: {wb.inventory}")
+    print(f"{print_prefix} inventory: {wb.inventory}")
     aos_server = AosServer(wb.inventory)
     
 
-    print( "====== main(): blueprint creating")
+    print( f"{print_prefix} blueprint creating")
     # aos_server.create_IP_Pool(AOS_ENV["resources"]["ip_pools"])
-    aos_server.create_blueprints()
+    aos_server.create_blueprints("day1")
     # # TODO: implement async
     # # time.sleep(10)
     # aos_server.commit(bp_id)
-    print( "====== main(): blueprint done")
+    print( f"{print_prefix} blueprint done")
 
 if __name__ == "__main__":
     main()
+
 
 
 
