@@ -207,28 +207,15 @@ class AosBp:
         print(f"{print_prefix} data: {self.data}")
 
         if self.phase == "day1":
-            bp_url = f"/api/blueprints?async=full"
-            bp_spec = {
-                "design": self.data["design"],
-                "init_type": self.data["init_type"],
-                "label": self.id,
-                "template_id": self.data["template_id"]
-            }            
-            resp = self.aos_server.http_post(bp_url, bp_spec, expected=202)
-            print(f"{print_prefix} resp: {resp.data}")
-            self.uuid = json.loads(resp.data)["id"]
-            task_id = json.loads(resp.data)["task_id"]
-            print(f"{print_prefix} uuid: {self.uuid}, task_id: {task_id}")
-
-            for i in range(5):
-                task_url = f"/api/blueprints/{self.uuid}/tasks/{task_id}"
-                resp = self.aos_server.http_get(task_url)
-                task_status = json.loads(resp.data)['status']
-                print(f"{print_prefix} task status: {task_status}")
-                if task_status == "succeeded":
-                    break
-                time.sleep(5)
-
+            # see if it does exists
+            need_to_create = True
+            resp = self.aos_server.http_get ("/api/blueprints")
+            for i in json.loads(resp.data)["items"]:
+                if i["label"] == self.id:
+                    need_to_create = False
+                    self.uuid = i["id"]
+            if need_to_create:
+                self.create_blueprint()
 
             asns_spines_url = f"/api/blueprints/{self.uuid}/resource_groups/asn/spine_asns"
             asns_spines_spec = {
@@ -265,8 +252,47 @@ class AosBp:
             resp = self.aos_server.http_put(spine_leaf_link_ips_url, spine_leaf_link_ips_spec, expected=202)
             # empty payload
 
+            interface_map_assignments_url = f"/api/blueprints/{self.uuid}/interface-map-assignments?async=full"
+            ifmap_spec = {
+                "assignments": {
+                }
+            }
+            for system_name, system in self.data["systems"].items():
+                query_url = f"/api/blueprints/{self.uuid}/qe?type=staging"
+                query_spec = {
+                    "blueprint-id": self.id,
+                    "query": f"node('system', name='system', label='{system_name}')"
+                }
+                resp = self.aos_server.http_post(query_url, query_spec, expected=200)
+                ifmap_spec["assignments"][json.loads(resp.data)["items"][0]["system"]["id"]] = system["interface_map"]
 
+            resp = self.aos_server.http_patch(interface_map_assignments_url, ifmap_spec, expected=202)
+            ifmap_task_id = json.loads(resp.data)["task_id"]
+            print(f"{print_prefix} ifmap_task_id {ifmap_task_id}")
 
+    def create_blueprint(self):
+        print_prefix = "AosBp.create_blueprint():"
+        bp_url = f"/api/blueprints?async=full"
+        bp_spec = {
+            "design": self.data["design"],
+            "init_type": self.data["init_type"],
+            "label": self.id,
+            "template_id": self.data["template_id"]
+        }            
+        resp = self.aos_server.http_post(bp_url, bp_spec, expected=202)
+        print(f"{print_prefix} resp: {resp.data}")
+        self.uuid = json.loads(resp.data)["id"]
+        task_id = json.loads(resp.data)["task_id"]
+        print(f"{print_prefix} uuid: {self.uuid}, task_id: {task_id}")
+
+        for i in range(5):
+            task_url = f"/api/blueprints/{self.uuid}/tasks/{task_id}"
+            resp = self.aos_server.http_get(task_url)
+            task_status = json.loads(resp.data)['status']
+            print(f"{print_prefix} task status: {task_status}")
+            if task_status == "succeeded":
+                break
+            time.sleep(5)
 
 
 
@@ -324,65 +350,70 @@ class AosServer:
         self.json_token_header = urllib3.response.HTTPHeaderDict({"Content-Type": "application/json", "AuthToken": self.token})
 
     def http_get(self, path, expected=None) -> urllib3.response.HTTPResponse:
-        print(f"==== GET {path}")
+        print_prefix = "==== AosServer.http_get()"
+        print(f"{print_prefix} {path}")
         resp = self.http.request('GET', path, headers=self.json_token_header)
         if expected:
-            print(f"== status (expect {expected}): {resp.status}")
+            print(f"{print_prefix} status (expect {expected}): {resp.status}")
             if resp.status != expected:
-                print(f"== body: {resp.data}")
+                print(f"{print_prefix} body: {resp.data}")
         else:
-            print(f"== status: {resp.status}")
+            print(f"{print_prefix} status: {resp.status}")
         return resp
 
     def http_delete(self, path, expected=None) -> urllib3.response.HTTPResponse:
-        print(f"==== DELETE {path}")
+        print_prefix = "==== AosServer.http_delete()"        
+        print(f"{print_prefix} {path}")
         resp = self.http.request('DELETE', path, headers=self.json_token_header)
         if expected:
-            print(f"== status (expect {expected}): {resp.status}")
+            print(f"{print_prefix} (expect {expected}): {resp.status}")
             if resp.status != expected:
-                print(f"== body: {resp.data}")
+                print(f"{print_prefix} body: {resp.data}")
         else:
-            print(f"== status: {resp.status}")
+            print(f"{print_prefix} status: {resp.status}")
         return resp
         
 
     def http_post(self, path, data, headers=None, expected=None) -> urllib3.response.HTTPResponse:
+        print_prefix = "==== AosServer.http_post()"
         if not headers:
             headers = self.json_token_header
-        print(f"==== POST {path}\n{data}")
+        print(f"{print_prefix} {path}\n{data}")
         resp = self.http.request('POST', path, body=json.dumps(data), headers=headers)
         if expected:
-            print(f"== status (expect {expected}): {resp.status}")
+            print(f"{print_prefix} status (expect {expected}): {resp.status}")
             if resp.status != expected:
-                print(f"== body: {resp.data}")
+                print(f"{print_prefix} body: {resp.data}")
         else:
-            print(f"== status: {resp.status}")
+            print(f"{print_prefix} status: {resp.status}")
         return resp
 
     def http_put(self, path, data, headers=None, expected=None) -> urllib3.response.HTTPResponse:
-        print(f"==== PUT {path}\n{data}")
+        print_prefix = "==== AosServer.http_put()"
+        print(f"{print_prefix} {path}\n{data}")
         if not headers:
             headers = self.json_token_header
         resp = self.http.request('PUT', path, body=json.dumps(data), headers=headers)
         if expected:
-            print(f"== status (expect {expected}): {resp.status}")
+            print(f"{print_prefix} status (expect {expected}): {resp.status}")
             if resp.status != expected:
-                print(f"== body: {resp.data}")
+                print(f"{print_prefix} body: {resp.data}")
         else:
-            print(f"== status: {resp.status}")
+            print(f"{print_prefix} status: {resp.status}")
         return resp
 
     def http_patch(self, path, data, headers=None, expected=None) -> urllib3.response.HTTPResponse:
-        print(f"==== PATCH {path}\n{data}")
+        print_prefix = "==== AosServer.http_patch()"
+        print(f"{print_prefix} {path}\n{data}")
         if not headers:
             headers = self.json_token_header
         resp = self.http.request('PATCH', path, body=json.dumps(data), headers=headers)
         if expected:
-            print(f"== status (expect {expected}): {resp.status}")
+            print(f"{print_prefix} status (expect {expected}): {resp.status}")
             if resp.status != expected:
-                print(f"== body: {resp.data}")
+                print(f"{print_prefix} body: {resp.data}")
         else:
-            print(f"== status: {resp.status}")
+            print(f"{print_prefix} status: {resp.status}")
         return resp
 
     def graph_query(self, bp_id, query) -> urllib3.response.HTTPResponse:
